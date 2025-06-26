@@ -44,13 +44,36 @@ class MyConv1D(tf.keras.layers.Layer):
         else:
             input_padded = inputs
             num_out_rows = num_rows - self.kernel_size + 1
-
+        
         # Perform the convolution operation
+        # Initialize an empty list to store the output
+        # Each output will be a 2D tensor of shape (batch_size, filters)
         conv_output = []
         for i in range(num_out_rows):
             # Extract the current window of input
             input_window = input_padded[:, i:i + self.kernel_size, :]
-            # Perform the convolution operation
+            # Multiply the weights with the input window
+            # Add new axes to both for broadcasting:
+            # Resulting broadcasted shape: (batch_size, filters, kernel_size, input_dims)
+            multiplied = self.w[tf.newaxis, :, :] * input_window[:, tf.newaxis, :, :]
+
+            # Axes 2 and 3 are removed after being summed
+            # This collapses the result into one scalar per filter for each batch
+            # Resulting shape: (batch_size, filters)
+            sum = tf.reduce_sum(multiplied, axis=[2, 3]) 
+
+            conv_output.append(sum)
+
+        # Stack the output list into a 3D tensor
+        conv_output = tf.stack(conv_output, axis=1)
+        # Add the bias term
+        conv_output += self.b[tf.newaxis, tf.newaxis, :]
+        # Return the output tensor
+        return conv_output
+
+
+
+        
             
 
 
